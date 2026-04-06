@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InvoiceKit</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #f7f9fc;
+    --border: #dde3ec;
+    --accent: #3a6cf4;
+    --accent-light: #eef1ff;
+    --text: #1a2236;
+    --muted: #7a8599;
+    --danger: #e05252;
+    --shadow: 0 2px 12px rgba(58,108,244,0.07);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; padding: 24px 16px; }
+  .app { max-width: 900px; margin: 0 auto; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; background: var(--surface); padding: 18px 24px; border-radius: 14px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .logo { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .badge { background: var(--accent-light); color: var(--accent); font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 20px; font-family: 'DM Mono', monospace; border: 1px solid #c5d0fb; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 16px; box-shadow: var(--shadow); }
+  .section-title { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .field { margin-bottom: 13px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 500; }
+  .field input, .field textarea, .field select { width: 100%; background: var(--surface2); border: 1.5px solid var(--border); border-radius: 9px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; padding: 10px 13px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(58,108,244,0.1); background: #fff; }
+  .field textarea { resize: vertical; min-height: 72px; }
+
+  /* Logo Upload */
+  .logo-upload-area { border: 2px dashed var(--border); border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2); position: relative; }
+  .logo-upload-area:hover { border-color: var(--accent); background: var(--accent-light); }
+  .logo-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .logo-upload-area .upload-icon { font-size: 28px; margin-bottom: 6px; }
+  .logo-upload-area .upload-text { font-size: 12px; color: var(--muted); }
+  .logo-preview-wrap { position: relative; display: inline-block; }
+  .logo-preview-wrap img { max-height: 72px; max-width: 200px; border-radius: 8px; border: 1px solid var(--border); display: block; }
+  .logo-remove-btn { position: absolute; top: -8px; right: -8px; background: var(--danger); color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+
+  .tax-id-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .tax-id-row select { flex: 0 0 180px; font-size: 13px; padding: 9px 10px; }
+  .tax-id-row input { flex: 1; font-size: 13px; padding: 9px 11px; }
+  .tax-id-row input, .tax-id-row select { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 9px; color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+  .tax-id-row input:focus, .tax-id-row select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(58,108,244,0.1); }
+  .remove-id-btn { background: #fff0f0; border: 1px solid #ffd5d5; color: var(--danger); cursor: pointer; border-radius: 7px; width: 32px; height: 36px; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
+  .remove-id-btn:hover { background: var(--danger); color: #fff; }
+  .add-id-btn { background: none; border: 1.5px dashed #c5d0fb; color: var(--accent); cursor: pointer; font-size: 12px; font-weight: 600; padding: 7px 14px; border-radius: 8px; font-family: 'DM Sans', sans-serif; transition: all 0.2s; margin-top: 2px; }
+  .add-id-btn:hover { background: var(--accent-light); }
+
+  /* Bank Details */
+  .bank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .bank-note { font-size: 11px; color: var(--muted); background: var(--accent-light); border: 1px solid #c5d0fb; border-radius: 8px; padding: 9px 12px; margin-bottom: 14px; line-height: 1.5; }
+
+  .items-header { display: grid; grid-template-columns: 2fr 80px 120px 120px 40px; gap: 8px; padding: 6px 10px; font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; text-transform: uppercase; letter-spacing: 1px; }
+  .item-row { display: grid; grid-template-columns: 2fr 80px 120px 120px 40px; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); align-items: center; }
+  .item-row input { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 8px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 9px 11px; outline: none; width: 100%; transition: border-color 0.2s; }
+  .item-row input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(58,108,244,0.1); background: #fff; }
+  .item-row input[readonly] { background: var(--accent-light); border-color: #c5d0fb; color: var(--accent); font-weight: 600; font-family: 'DM Mono', monospace; cursor: default; text-align: right; }
+  .del-btn { background: #fff0f0; border: 1px solid #ffd5d5; color: var(--danger); cursor: pointer; font-size: 16px; border-radius: 7px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .del-btn:hover { background: var(--danger); color: #fff; }
+  .add-btn { background: var(--accent-light); border: 1.5px dashed #c5d0fb; color: var(--accent); cursor: pointer; font-size: 13px; font-weight: 600; padding: 11px; border-radius: 9px; width: 100%; margin-top: 12px; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+  .add-btn:hover { background: #e0e8ff; border-color: var(--accent); }
+
+  .totals { margin-left: auto; width: 290px; }
+  .totals-row { display: flex; justify-content: space-between; padding: 9px 0; font-size: 14px; border-bottom: 1px solid var(--border); }
+  .totals-row:last-child { border-bottom: none; }
+  .totals-row label { color: var(--muted); }
+  .totals-row .val { font-family: 'DM Mono', monospace; font-weight: 500; color: var(--text); }
+  .totals-row.grand { font-size: 17px; font-weight: 700; padding-top: 14px; }
+  .totals-row.grand label { color: var(--text); }
+  .totals-row.grand .val { color: var(--accent); }
+  .tax-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .tax-row label { color: var(--muted); flex: 1; }
+  .tax-input { background: var(--surface2); border: 1.5px solid var(--border); border-radius: 7px; color: var(--accent); font-family: 'DM Mono', monospace; font-size: 13px; padding: 6px 10px; outline: none; width: 65px; text-align: right; }
+  .tax-input:focus { border-color: var(--accent); }
+
+  .actions { display: flex; gap: 12px; margin-top: 24px; }
+  .btn { padding: 13px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; border: none; }
+  .btn-primary { background: var(--accent); color: #fff; flex: 1; box-shadow: 0 4px 14px rgba(58,108,244,0.25); }
+  .btn-primary:hover { background: #2d5ce0; transform: translateY(-1px); }
+  .btn-outline { background: var(--surface); border: 1.5px solid var(--border); color: var(--muted); }
+  .btn-outline:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,25,50,0.6); backdrop-filter: blur(4px); z-index: 100; padding: 24px; overflow-y: auto; }
+  .modal-overlay.active { display: flex; align-items: flex-start; justify-content: center; }
+  .modal { background: #fff; color: #111; border-radius: 16px; width: 100%; max-width: 720px; padding: 48px; margin: auto; position: relative; box-shadow: 0 24px 64px rgba(0,0,0,0.18); }
+  .modal-close { position: absolute; top: 16px; right: 16px; background: #f3f4f6; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: #666; transition: all 0.2s; }
+  .modal-close:hover { background: #e5e7eb; }
+
+  /* ── Invoice Preview ── */
+  #invoicePreview { width: 100%; }
+  .inv-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; width: 100%; }
+  .inv-from { flex: 1; }
+  .inv-logo-img { max-height: 60px; max-width: 180px; margin-bottom: 10px; display: block; }
+  .inv-logo { font-family: 'Playfair Display', serif; font-size: 26px; color: #1a2236; font-weight: 700; }
+  .inv-logo-sub { font-size: 12px; color: #7a8599; margin-top: 4px; line-height: 1.7; }
+  .inv-tax-ids { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .inv-tax-badge { font-size: 11px; font-family: 'DM Mono', monospace; background: #eef1ff; color: #3a6cf4; border: 1px solid #c5d0fb; border-radius: 4px; padding: 2px 7px; white-space: nowrap; }
+  .inv-meta { text-align: right; flex-shrink: 0; margin-left: 24px; }
+  .inv-meta h2 { font-family: 'DM Mono', monospace; font-size: 22px; font-weight: 600; color: #3a6cf4; letter-spacing: 3px; }
+  .inv-meta p { font-size: 12px; color: #7a8599; margin-top: 4px; font-family: 'DM Mono', monospace; }
+  .inv-divider { height: 3px; background: linear-gradient(90deg, #3a6cf4, #7aa8f4); border-radius: 2px; margin: 20px 0 24px; width: 100%; }
+  .inv-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 28px; width: 100%; }
+  .inv-party h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #3a6cf4; margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .inv-party strong { font-size: 15px; color: #1a2236; display: block; margin-bottom: 3px; }
+  .inv-party p { font-size: 13px; color: #555; line-height: 1.6; white-space: pre-line; }
+  .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  .inv-table thead tr { background: #f0f4ff; }
+  .inv-table th { font-family: 'DM Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #3a6cf4; padding: 10px 12px; text-align: left; }
+  .inv-table th:nth-child(n+2) { text-align: right; }
+  .inv-table td { padding: 11px 12px; font-size: 13px; border-bottom: 1px solid #f0f0f5; color: #333; }
+  .inv-table td:nth-child(n+2) { text-align: right; font-family: 'DM Mono', monospace; }
+
+  /* Totals + Notes side by side at bottom */
+  .inv-bottom { display: flex; gap: 32px; align-items: flex-start; width: 100%; margin-top: 8px; }
+  .inv-notes-wrap { flex: 1; }
+  .inv-notes-box { background: #f8faff; border: 1px solid #e0e8ff; border-radius: 10px; padding: 16px 18px; }
+  .inv-notes-box h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #3a6cf4; margin-bottom: 8px; font-family: 'DM Mono', monospace; }
+  .inv-notes-box p { font-size: 13px; color: #444; line-height: 1.7; white-space: pre-line; word-break: break-word; }
+  .inv-totals-wrap { flex-shrink: 0; width: 230px; }
+  .inv-totals-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; border-bottom: 1px solid #eef0f5; }
+  .inv-totals-row label { color: #7a8599; }
+  .inv-totals-row .v { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .inv-grand { border-top: 2px solid #3a6cf4 !important; border-bottom: none !important; margin-top: 6px; padding-top: 10px !important; }
+  .inv-grand label { font-weight: 700; font-size: 15px; color: #1a2236; }
+  .inv-grand .v { font-weight: 700; font-size: 15px; color: #3a6cf4; }
+
+  /* Bank details on invoice preview */
+  .inv-bank-section { margin-top: 28px; border-top: 1px solid #e8ecf5; padding-top: 20px; width: 100%; }
+  .inv-bank-section h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #3a6cf4; margin-bottom: 12px; font-family: 'DM Mono', monospace; }
+  .inv-bank-block { background: #f8faff; border: 1px solid #e0e8ff; border-radius: 10px; padding: 16px 18px; display: inline-block; min-width: 260px; max-width: 100%; }
+  .inv-bank-row { display: flex; gap: 10px; padding: 5px 0; border-bottom: 1px solid #eef0f8; font-size: 13px; }
+  .inv-bank-row:last-child { border-bottom: none; }
+  .inv-bank-row .bk-label { color: #7a8599; font-size: 12px; min-width: 130px; flex-shrink: 0; }
+  .inv-bank-row .bk-value { color: #1a2236; font-weight: 600; font-family: 'DM Mono', monospace; font-size: 13px; }
+
+  .print-btn { margin-top: 24px; width: 100%; padding: 13px; background: #3a6cf4; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.2s; }
+  .print-btn:hover { background: #2d5ce0; }
+
+  @media print {
+    .modal-close, .print-btn { display: none !important; }
+    .modal-overlay { position: static; background: none; padding: 0; display: block; }
+    .modal { box-shadow: none; padding: 20px; border-radius: 0; }
+    body > .app { display: none; }
+  }
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+    .bank-grid { grid-template-columns: 1fr; }
+    .items-header { display: none; }
+    .item-row { grid-template-columns: 1fr 1fr; }
+    .item-row input:first-child { grid-column: 1/-1; }
+    .tax-id-row select { flex: 0 0 140px; }
+    .inv-bottom { flex-direction: column; }
+    .inv-totals-wrap { width: 100%; }
+    .inv-parties { grid-template-columns: 1fr; gap: 16px; }
+    .inv-bank-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="logo">Invoice<span>Kit</span></div>
+    <div class="badge">PORTFOLIO TOOL</div>
+  </div>
+
+  <div class="grid">
+    <div class="section">
+      <div class="section-title">Your Business</div>
+
+      <!-- Logo Upload -->
+      <div class="field">
+        <label>Company Logo</label>
+        <div id="logoUploadArea" class="logo-upload-area">
+          <input type="file" id="logoInput" accept="image/*" onchange="handleLogoUpload(event)" />
+          <div id="logoPlaceholder">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">Click to upload logo<br><span style="font-size:11px;">PNG, JPG, SVG — max 2MB</span></div>
+          </div>
+          <div id="logoPreview" style="display:none;">
+            <div class="logo-preview-wrap">
+              <img id="logoImg" src="" alt="Logo" />
+              <button class="logo-remove-btn" onclick="removeLogo(event)" title="Remove logo">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field"><label>Business Name</label><input id="bizName" placeholder="Acme Corp" /></div>
+      <div class="field"><label>Email</label><input id="bizEmail" type="email" placeholder="hello@acme.com" /></div>
+      <div class="field"><label>Phone</label><input id="bizPhone" placeholder="+1 555 000 0000" /></div>
+      <div class="field"><label>Address</label><textarea id="bizAddr" placeholder="123 Main St&#10;New York, NY 10001"></textarea></div>
+      <div class="field">
+        <label>Tax / Registration IDs</label>
+        <div id="bizIds"></div>
+        <button class="add-id-btn" onclick="addId('biz')">+ Add ID</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">Bill To</div>
+      <div class="field"><label>Client Name</label><input id="clientName" placeholder="John Smith" /></div>
+      <div class="field"><label>Company</label><input id="clientCompany" placeholder="Client Ltd." /></div>
+      <div class="field"><label>Email</label><input id="clientEmail" type="email" placeholder="john@client.com" /></div>
+      <div class="field"><label>Address</label><textarea id="clientAddr" placeholder="456 Oak Ave&#10;Los Angeles, CA"></textarea></div>
+      <div class="field">
+        <label>Tax / Registration IDs</label>
+        <div id="clientIds"></div>
+        <button class="add-id-btn" onclick="addId('client')">+ Add ID</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Invoice Details</div>
+    <div class="grid">
+      <div class="field"><label>Invoice Number</label><input id="invNum" placeholder="INV-001" /></div>
+      <div class="field"><label>Currency</label>
+        <select id="currency" onchange="renderItems()">
+          <option value="$|USD">🇺🇸 USD — US Dollar ($)</option>
+          <option value="£|GBP">🇬🇧 GBP — British Pound (£)</option>
+          <option value="€|EUR">🇪🇺 EUR — Euro (€)</option>
+          <option value="A$|AUD">🇦🇺 AUD — Australian Dollar (A$)</option>
+          <option value="C$|CAD">🇨🇦 CAD — Canadian Dollar (C$)</option>
+          <option value="S$|SGD">🇸🇬 SGD — Singapore Dollar (S$)</option>
+          <option value="¥|JPY">🇯🇵 JPY — Japanese Yen (¥)</option>
+          <option value="¥|CNY">🇨🇳 CNY — Chinese Yuan (¥)</option>
+          <option value="₩|KRW">🇰🇷 KRW — South Korean Won (₩)</option>
+          <option value="CHF|CHF">🇨🇭 CHF — Swiss Franc</option>
+          <option value="kr|SEK">🇸🇪 SEK — Swedish Krona</option>
+          <option value="kr|NOK">🇳🇴 NOK — Norwegian Krone</option>
+          <option value="kr|DKK">🇩🇰 DKK — Danish Krone</option>
+          <option value="NZ$|NZD">🇳🇿 NZD — New Zealand Dollar</option>
+          <option value="R|ZAR">🇿🇦 ZAR — South African Rand</option>
+          <option value="R$|BRL">🇧🇷 BRL — Brazilian Real</option>
+          <option value="MX$|MXN">🇲🇽 MXN — Mexican Peso</option>
+          <option value="AED|AED">🇦🇪 AED — UAE Dirham</option>
+          <option value="SAR|SAR">🇸🇦 SAR — Saudi Riyal</option>
+          <option value="₹|INR">🇮🇳 INR — Indian Rupee (₹)</option>
+          <option value="₺|TRY">🇹🇷 TRY — Turkish Lira</option>
+          <option value="₱|PHP">🇵🇭 PHP — Philippine Peso</option>
+          <option value="RM|MYR">🇲🇾 MYR — Malaysian Ringgit</option>
+          <option value="฿|THB">🇹🇭 THB — Thai Baht</option>
+          <option value="₫|VND">🇻🇳 VND — Vietnamese Dong</option>
+          <option value="Rp|IDR">🇮🇩 IDR — Indonesian Rupiah</option>
+          <option value="HK$|HKD">🇭🇰 HKD — Hong Kong Dollar</option>
+          <option value="NT$|TWD">🇹🇼 TWD — Taiwan Dollar</option>
+          <option value="zł|PLN">🇵🇱 PLN — Polish Zloty</option>
+          <option value="Kč|CZK">🇨🇿 CZK — Czech Koruna</option>
+        </select>
+      </div>
+      <div class="field"><label>Issue Date</label><input id="issueDate" type="date" /></div>
+      <div class="field"><label>Due Date</label><input id="dueDate" type="date" /></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Line Items</div>
+    <div class="items-header">
+      <span>Description</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span>
+    </div>
+    <div id="itemsContainer"></div>
+    <button class="add-btn" onclick="addItem()">+ Add Line Item</button>
+    <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+      <div class="totals">
+        <div class="totals-row"><label>Subtotal</label><span class="val" id="subtotal">$0.00</span></div>
+        <div class="tax-row"><label>Discount (%)</label><input class="tax-input" id="discountRate" type="number" value="0" min="0" max="100" oninput="updateTotals()" /></div>
+        <div class="totals-row"><label>After Discount</label><span class="val" id="afterDiscount">$0.00</span></div>
+        <div class="tax-row"><label>Tax (%)</label><input class="tax-input" id="taxRate" type="number" value="0" min="0" max="100" oninput="updateTotals()" /></div>
+        <div class="totals-row"><label>Tax Amount</label><span class="val" id="taxAmount">$0.00</span></div>
+        <div class="totals-row grand"><label>Total Due</label><span class="val" id="grandTotal">$0.00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bank Details Section -->
+  <div class="section">
+    <div class="section-title">Bank / Payment Details</div>
+    <p class="bank-note">💡 These details will appear at the bottom of your invoice so clients know exactly how to pay you.</p>
+    <div class="bank-grid">
+      <div class="field"><label>Bank Name</label><input id="bankName" placeholder="HDFC Bank / Barclays / Chase" /></div>
+      <div class="field"><label>Account Holder Name</label><input id="accountHolder" placeholder="Your Name or Business Name" /></div>
+      <div class="field"><label>Account Number</label><input id="accountNumber" placeholder="XXXX XXXX XXXX" /></div>
+      <div class="field"><label>IFSC / Sort Code / Routing No.</label><input id="ifscCode" placeholder="HDFC0001234 / 20-30-40" /></div>
+      <div class="field"><label>SWIFT / BIC Code</label><input id="swiftCode" placeholder="HDFCINBB (for international)" /></div>
+      <div class="field"><label>IBAN (if applicable)</label><input id="ibanCode" placeholder="GB29 NWBK 6016 1331 9268 19" /></div>
+      <div class="field"><label>UPI ID / PayPal / Wise</label><input id="upiId" placeholder="yourname@upi or paypal.me/link" /></div>
+      <div class="field"><label>Payment Reference / Note</label><input id="paymentRef" placeholder="Use invoice number as reference" /></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Notes / Payment Terms</div>
+    <div class="field">
+      <textarea id="notes" placeholder="Payment due within 30 days. Bank transfer preferred.&#10;Thank you for your business!"></textarea>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-outline" onclick="clearAll()">🗑 Clear All</button>
+    <button class="btn btn-primary" onclick="previewInvoice()">Preview & Download →</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div id="invoicePreview"></div>
+    <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+  </div>
+</div>
+
+<script>
+  let items = [], bizIds = [], clientIds = [];
+  let logoDataUrl = null;
+
+  const TAX_ID_TYPES = [
+    "GSTIN (India)","PAN (India)","TAN (India)",
+    "VAT Number (UK/EU)","EIN (USA)","SSN (USA)",
+    "ABN (Australia)","ACN (Australia)",
+    "GST/HST (Canada)","BN (Canada)",
+    "TRN (UAE)","CRN (UAE)",
+    "UEN (Singapore)","GST Reg (Singapore)",
+    "CNPJ (Brazil)","CPF (Brazil)",
+    "RFC (Mexico)","CUIT (Argentina)",
+    "NIF (Spain/Portugal)","SIRET (France)",
+    "Steuernummer (Germany)","USt-IdNr (Germany)",
+    "CIF (Spain)","KVK (Netherlands)",
+    "CVR (Denmark)","Org.nr (Sweden/Norway)",
+    "Company Reg. No.","VAT ID","Tax ID","Other"
+  ];
+
+  const today = new Date(), due = new Date();
+  due.setDate(due.getDate() + 30);
+  document.getElementById('issueDate').value = today.toISOString().split('T')[0];
+  document.getElementById('dueDate').value = due.toISOString().split('T')[0];
+  document.getElementById('invNum').value = 'INV-001';
+  addItem(); addItem(); addItem();
+
+  /* ── Logo ── */
+  function handleLogoUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Logo file must be under 2MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      logoDataUrl = ev.target.result;
+      document.getElementById('logoImg').src = logoDataUrl;
+      document.getElementById('logoPlaceholder').style.display = 'none';
+      document.getElementById('logoPreview').style.display = 'block';
+      // Make upload area non-clickable for file input once image is chosen
+      document.getElementById('logoInput').style.pointerEvents = 'none';
+    };
+    reader.readAsDataURL(file);
+  }
+  function removeLogo(e) {
+    e.stopPropagation();
+    logoDataUrl = null;
+    document.getElementById('logoImg').src = '';
+    document.getElementById('logoPlaceholder').style.display = 'block';
+    document.getElementById('logoPreview').style.display = 'none';
+    document.getElementById('logoInput').value = '';
+    document.getElementById('logoInput').style.pointerEvents = 'auto';
+  }
+
+  function getCurrencySymbol() { return document.getElementById('currency').value.split('|')[0]; }
+  function getCurrencyCode() { return document.getElementById('currency').value.split('|')[1]; }
+  function ifVal(v, html) { return v && v.trim() ? html : ''; }
+
+  function idTypeOptions(selected) {
+    return TAX_ID_TYPES.map(t => `<option value="${t}" ${t===selected?'selected':''}>${t}</option>`).join('');
+  }
+  function addId(who) {
+    const id = Date.now() + Math.random();
+    (who==='biz'?bizIds:clientIds).push({id, type: TAX_ID_TYPES[0], value:''});
+    renderIds(who);
+  }
+  function removeId(who, id) {
+    if(who==='biz') bizIds=bizIds.filter(i=>i.id!==id);
+    else clientIds=clientIds.filter(i=>i.id!==id);
+    renderIds(who);
+  }
+  function updateIdField(who, id, field, val) {
+    const arr = who==='biz'?bizIds:clientIds;
+    const item = arr.find(i=>i.id===id);
+    if(item) item[field]=val;
+  }
+  function renderIds(who) {
+    const arr = who==='biz'?bizIds:clientIds;
+    document.getElementById(who==='biz'?'bizIds':'clientIds').innerHTML = arr.map(item=>`
+      <div class="tax-id-row">
+        <select onchange="updateIdField('${who}',${item.id},'type',this.value)">${idTypeOptions(item.type)}</select>
+        <input placeholder="Enter number / ID" value="${item.value.replace(/"/g,'&quot;')}"
+          oninput="updateIdField('${who}',${item.id},'value',this.value)" />
+        <button class="remove-id-btn" onclick="removeId('${who}',${item.id})">×</button>
+      </div>`).join('');
+  }
+
+  function addItem() {
+    items.push({id: Date.now()+Math.random(), desc:'', qty:1, rate:0});
+    renderItems();
+  }
+  function removeItem(id) {
+    items = items.filter(i=>i.id!==id);
+    renderItems(); updateTotals();
+  }
+  function renderItems() {
+    const c = getCurrencySymbol();
+    document.getElementById('itemsContainer').innerHTML = items.map(item=>`
+      <div class="item-row">
+        <input placeholder="Description of service or product" value="${item.desc.replace(/"/g,'&quot;')}"
+          oninput="updateItemField(${item.id},'desc',this.value)" />
+        <input type="number" placeholder="1" value="${item.qty||''}" min="0"
+          oninput="updateItemField(${item.id},'qty',this.value)" />
+        <input type="number" placeholder="0.00" value="${item.rate||''}" min="0" step="0.01"
+          oninput="updateItemField(${item.id},'rate',this.value)" />
+        <input readonly value="${c}${((item.qty||0)*(item.rate||0)).toFixed(2)}" />
+        <button class="del-btn" onclick="removeItem(${item.id})">×</button>
+      </div>`).join('');
+    updateTotals();
+  }
+  function updateItemField(id, field, value) {
+    const item = items.find(i=>i.id===id);
+    if(!item) return;
+    item[field] = field==='desc' ? value : parseFloat(value)||0;
+    const c = getCurrencySymbol();
+    const rows = document.querySelectorAll('.item-row');
+    items.forEach((it,idx)=>{
+      if(it.id===id){ const amt=rows[idx]?.querySelectorAll('input')[3]; if(amt) amt.value=c+((it.qty||0)*(it.rate||0)).toFixed(2); }
+    });
+    updateTotals();
+  }
+  function updateTotals() {
+    const c = getCurrencySymbol();
+    const sub = items.reduce((s,i)=>s+(i.qty||0)*(i.rate||0),0);
+    const disc = parseFloat(document.getElementById('discountRate').value)||0;
+    const afterDisc = sub - (sub*disc/100);
+    const tax = parseFloat(document.getElementById('taxRate').value)||0;
+    const taxAmt = afterDisc*tax/100;
+    document.getElementById('subtotal').textContent = c+sub.toFixed(2);
+    document.getElementById('afterDiscount').textContent = c+afterDisc.toFixed(2);
+    document.getElementById('taxAmount').textContent = c+taxAmt.toFixed(2);
+    document.getElementById('grandTotal').textContent = c+(afterDisc+taxAmt).toFixed(2);
+  }
+
+  function getBankDetails() {
+    return [
+      { label: 'Bank Name',       id: 'bankName' },
+      { label: 'Account Holder',  id: 'accountHolder' },
+      { label: 'Account Number',  id: 'accountNumber' },
+      { label: 'IFSC / Sort Code / Routing', id: 'ifscCode' },
+      { label: 'SWIFT / BIC',     id: 'swiftCode' },
+      { label: 'IBAN',            id: 'ibanCode' },
+      { label: 'UPI / PayPal / Wise', id: 'upiId' },
+      { label: 'Payment Ref.',    id: 'paymentRef' },
+    ].filter(f => document.getElementById(f.id).value.trim());
+  }
+
+  function previewInvoice() {
+    const c = getCurrencySymbol(), code = getCurrencyCode();
+    const sub = items.reduce((s,i)=>s+(i.qty||0)*(i.rate||0),0);
+    const disc = parseFloat(document.getElementById('discountRate').value)||0;
+    const discAmt = sub*disc/100, afterDisc = sub-discAmt;
+    const tax = parseFloat(document.getElementById('taxRate').value)||0;
+    const taxAmt = afterDisc*tax/100, grand = afterDisc+taxAmt;
+
+    const bizName    = document.getElementById('bizName').value.trim();
+    const bizEmail   = document.getElementById('bizEmail').value.trim();
+    const bizPhone   = document.getElementById('bizPhone').value.trim();
+    const bizAddr    = document.getElementById('bizAddr').value.trim();
+    const clientName = document.getElementById('clientName').value.trim();
+    const clientCo   = document.getElementById('clientCompany').value.trim();
+    const clientEmail= document.getElementById('clientEmail').value.trim();
+    const clientAddr = document.getElementById('clientAddr').value.trim();
+    const notes      = document.getElementById('notes').value.trim();
+    const invNum     = document.getElementById('invNum').value.trim();
+    const issueDate  = document.getElementById('issueDate').value;
+    const dueDate    = document.getElementById('dueDate').value;
+
+    const bizBadges    = bizIds.filter(i=>i.value.trim()).map(i=>`<span class="inv-tax-badge">${i.type}: ${i.value}</span>`).join('');
+    const clientBadges = clientIds.filter(i=>i.value.trim()).map(i=>`<span class="inv-tax-badge">${i.type}: ${i.value}</span>`).join('');
+
+    const itemRows = items.filter(i=>i.desc.trim()||i.rate).map(i=>`
+      <tr>
+        <td>${i.desc||'—'}</td>
+        <td>${i.qty}</td>
+        <td>${c}${parseFloat(i.rate||0).toFixed(2)}</td>
+        <td>${c}${((i.qty||0)*(i.rate||0)).toFixed(2)}</td>
+      </tr>`).join('');
+
+    // Logo in preview
+    const logoHtml = logoDataUrl
+      ? `<img class="inv-logo-img" src="${logoDataUrl}" alt="Logo" />`
+      : '';
+
+    // Notes column
+    const notesColumn = notes ? `
+      <div class="inv-notes-wrap">
+        <div class="inv-notes-box">
+          <h4>Notes &amp; Payment Terms</h4>
+          <p>${notes}</p>
+        </div>
+      </div>` : `<div class="inv-notes-wrap"></div>`;
+
+    // Bank details section
+    const bankDetails = getBankDetails();
+    const bankSection = bankDetails.length > 0 ? `
+      <div class="inv-bank-section">
+        <h4>Payment Details</h4>
+        <div class="inv-bank-block">
+          ${bankDetails.map(f=>`
+            <div class="inv-bank-row">
+              <span class="bk-label">${f.label}</span>
+              <span class="bk-value">${document.getElementById(f.id).value.trim()}</span>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    document.getElementById('invoicePreview').innerHTML = `
+      <div class="inv-header">
+        <div class="inv-from">
+          ${logoHtml}
+          <div class="inv-logo">${bizName||'Your Business'}</div>
+          <div class="inv-logo-sub">
+            ${ifVal(bizEmail,`<span>${bizEmail}</span>`)}
+            ${ifVal(bizPhone,`${bizEmail?' · ':''}<span>${bizPhone}</span>`)}
+            ${ifVal(bizAddr,`<br>${bizAddr}`)}
+          </div>
+          ${bizBadges?`<div class="inv-tax-ids">${bizBadges}</div>`:''}
+        </div>
+        <div class="inv-meta">
+          <h2>INVOICE</h2>
+          ${ifVal(invNum,`<p>#${invNum}</p>`)}
+          ${ifVal(issueDate,`<p>Issued: ${issueDate}</p>`)}
+          ${ifVal(dueDate,`<p>Due: ${dueDate}</p>`)}
+          <p style="margin-top:7px;font-size:11px;background:#eef1ff;color:#3a6cf4;padding:3px 8px;border-radius:4px;display:inline-block;">${code}</p>
+        </div>
+      </div>
+      <div class="inv-divider"></div>
+      <div class="inv-parties">
+        <div class="inv-party">
+          <h4>From</h4>
+          <strong>${bizName||'—'}</strong>
+          ${ifVal(bizEmail,`<p>${bizEmail}</p>`)}
+          ${ifVal(bizAddr,`<p>${bizAddr}</p>`)}
+        </div>
+        <div class="inv-party">
+          <h4>Bill To</h4>
+          ${ifVal(clientName,`<strong>${clientName}</strong>`)}
+          ${ifVal(clientCo,`<p><em>${clientCo}</em></p>`)}
+          ${ifVal(clientEmail,`<p>${clientEmail}</p>`)}
+          ${ifVal(clientAddr,`<p>${clientAddr}</p>`)}
+          ${clientBadges?`<div class="inv-tax-ids">${clientBadges}</div>`:''}
+        </div>
+      </div>
+      <table class="inv-table">
+        <thead><tr>
+          <th>Description</th>
+          <th style="text-align:right">Qty</th>
+          <th style="text-align:right">Rate</th>
+          <th style="text-align:right">Amount</th>
+        </tr></thead>
+        <tbody>${itemRows||'<tr><td colspan="4" style="color:#aaa;text-align:center;padding:16px;">No items added</td></tr>'}</tbody>
+      </table>
+      <div class="inv-bottom">
+        ${notesColumn}
+        <div class="inv-totals-wrap">
+          <div class="inv-totals-row"><label>Subtotal</label><span class="v">${c}${sub.toFixed(2)}</span></div>
+          ${disc>0?`<div class="inv-totals-row"><label>Discount (${disc}%)</label><span class="v">−${c}${discAmt.toFixed(2)}</span></div>`:''}
+          ${tax>0?`<div class="inv-totals-row"><label>Tax (${tax}%)</label><span class="v">${c}${taxAmt.toFixed(2)}</span></div>`:''}
+          <div class="inv-totals-row inv-grand"><label>Total Due</label><span class="v">${c}${grand.toFixed(2)}</span></div>
+        </div>
+      </div>
+      ${bankSection}
+    `;
+    document.getElementById('modal').classList.add('active');
+  }
+
+  function closeModal() { document.getElementById('modal').classList.remove('active'); }
+
+  function clearAll() {
+    if(!confirm('Clear everything and start fresh?')) return;
+    ['bizName','bizEmail','bizPhone','bizAddr','clientName','clientCompany','clientEmail','clientAddr','notes',
+     'bankName','accountHolder','accountNumber','ifscCode','swiftCode','ibanCode','upiId','paymentRef']
+      .forEach(id=>document.getElementById(id).value='');
+    document.getElementById('taxRate').value=0;
+    document.getElementById('discountRate').value=0;
+    bizIds=[]; clientIds=[];
+    renderIds('biz'); renderIds('client');
+    items=[];
+    removeLogo({stopPropagation:()=>{}});
+    addItem(); addItem(); addItem();
+  }
+</script>
+</body>
+</html>
